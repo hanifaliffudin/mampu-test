@@ -131,7 +131,7 @@ export default function UsersTable() {
       <div className="mb-4 grid gap-3 md:grid-cols-3">
         <input
           aria-label="Search users"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-500"
+          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-500 focus-visible:ring-2 focus-visible:ring-zinc-300"
           onChange={(event) => setParams({ q: event.target.value })}
           placeholder="Search by name or email"
           value={query}
@@ -139,7 +139,7 @@ export default function UsersTable() {
 
         <select
           aria-label="Filter users"
-          className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-zinc-300 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-zinc-300"
           onChange={(event) => setParams({ filter: event.target.value })}
           value={filter}
         >
@@ -150,7 +150,7 @@ export default function UsersTable() {
 
         <select
           aria-label="Sort users"
-          className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-zinc-300 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-zinc-300"
           onChange={(event) => setParams({ sort: event.target.value })}
           value={sort}
         >
@@ -161,9 +161,25 @@ export default function UsersTable() {
       </div>
 
       {isLoading ? (
-        <p className="rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700">
-          Loading users and activity data...
-        </p>
+        <div aria-live="polite" className="space-y-3">
+          <p className="text-sm text-zinc-600">Loading users and activity data...</p>
+          <div className="hidden space-y-2 md:block">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div
+                className="h-10 animate-pulse rounded-lg bg-zinc-100"
+                key={`desktop-skeleton-${index}`}
+              />
+            ))}
+          </div>
+          <div className="space-y-2 md:hidden">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                className="h-24 animate-pulse rounded-xl bg-zinc-100"
+                key={`mobile-skeleton-${index}`}
+              />
+            ))}
+          </div>
+        </div>
       ) : null}
 
       {error ? (
@@ -176,14 +192,17 @@ export default function UsersTable() {
         <>
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[780px] border-collapse text-left text-sm">
+              <caption className="sr-only">
+                User activity table with posts, completed todos, and pending todos
+              </caption>
               <thead>
                 <tr className="border-b border-zinc-200 bg-zinc-50">
-                  <th className="px-3 py-2 font-semibold text-zinc-700">Name</th>
-                  <th className="px-3 py-2 font-semibold text-zinc-700">Email</th>
-                  <th className="px-3 py-2 font-semibold text-zinc-700">Website</th>
-                  <th className="px-3 py-2 font-semibold text-zinc-700">Posts</th>
-                  <th className="px-3 py-2 font-semibold text-zinc-700">Completed</th>
-                  <th className="px-3 py-2 font-semibold text-zinc-700">Pending</th>
+                  <th className="px-3 py-2 font-semibold text-zinc-700" scope="col">Name</th>
+                  <th className="px-3 py-2 font-semibold text-zinc-700" scope="col">Email</th>
+                  <th className="px-3 py-2 font-semibold text-zinc-700" scope="col">Website</th>
+                  <th className="px-3 py-2 font-semibold text-zinc-700" scope="col">Posts</th>
+                  <th className="px-3 py-2 font-semibold text-zinc-700" scope="col">Completed</th>
+                  <th className="px-3 py-2 font-semibold text-zinc-700" scope="col">Pending</th>
                 </tr>
               </thead>
               <tbody>
@@ -191,7 +210,7 @@ export default function UsersTable() {
                   <tr className="border-b border-zinc-100 hover:bg-zinc-50" key={user.id}>
                     <td className="px-3 py-2 text-zinc-900">
                       <Link
-                        className="font-medium text-zinc-900 underline"
+                        className="inline-flex rounded px-1 py-0.5 font-medium text-zinc-900 underline transition hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-300"
                         href={`/users/${user.id}?${searchParams.toString()}`}
                       >
                         {user.name}
@@ -200,7 +219,7 @@ export default function UsersTable() {
                     <td className="px-3 py-2 text-zinc-700 break-all">{user.email}</td>
                     <td className="px-3 py-2">
                       <a
-                        className="text-blue-700 underline"
+                        className="inline-flex rounded px-1 py-0.5 text-blue-700 underline transition hover:text-blue-800 focus-visible:ring-2 focus-visible:ring-blue-200"
                         href={formatWebsiteUrl(user.website)}
                         rel="noreferrer noopener"
                         target="_blank"
@@ -220,11 +239,11 @@ export default function UsersTable() {
           <div className="space-y-3 md:hidden">
             {visibleUsers.map((user) => (
               <article
-                className="rounded-xl border border-zinc-200 p-4"
+                className="rounded-xl border border-zinc-200 p-4 shadow-sm"
                 key={user.id}
               >
                 <Link
-                  className="text-base font-semibold text-zinc-900 underline"
+                  className="inline-flex rounded text-base font-semibold text-zinc-900 underline focus-visible:ring-2 focus-visible:ring-zinc-300"
                   href={`/users/${user.id}?${searchParams.toString()}`}
                 >
                   {user.name}
@@ -246,9 +265,14 @@ export default function UsersTable() {
           </div>
 
           {visibleUsers.length === 0 ? (
-            <p className="px-3 py-4 text-sm text-zinc-600">
-              No users match your current search and filters.
-            </p>
+            <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-center">
+              <p className="text-sm font-medium text-zinc-700">
+                No users match your current search and filters.
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                Try clearing the query or changing filter/sort options.
+              </p>
+            </div>
           ) : null}
         </>
       ) : null}
