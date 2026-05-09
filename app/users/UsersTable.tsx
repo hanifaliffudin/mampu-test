@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type User = {
   id: number;
@@ -21,6 +22,7 @@ const fetcher = async (url: string): Promise<User[]> => {
 };
 
 export default function UsersTable() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [sortByName, setSortByName] = useState<"asc" | "desc">("asc");
 
@@ -99,13 +101,26 @@ export default function UsersTable() {
             </thead>
             <tbody>
               {filteredUsers.map((user) => (
-                <tr className="border-b border-zinc-100" key={user.id}>
+                <tr
+                  className="cursor-pointer border-b border-zinc-100 transition hover:bg-zinc-50 focus-within:bg-zinc-50"
+                  key={user.id}
+                  onClick={() => router.push(`/users/${user.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      router.push(`/users/${user.id}`);
+                    }
+                  }}
+                  role="link"
+                  tabIndex={0}
+                >
                   <td className="px-3 py-2 text-zinc-900">{user.name}</td>
                   <td className="px-3 py-2 text-zinc-700">{user.email}</td>
                   <td className="px-3 py-2">
                     <a
                       className="text-blue-700 underline"
                       href={`https://${user.website}`}
+                      onClick={(event) => event.stopPropagation()}
                       rel="noreferrer noopener"
                       target="_blank"
                     >
