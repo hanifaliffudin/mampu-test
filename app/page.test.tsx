@@ -3,12 +3,12 @@ import { render, screen } from '@testing-library/react';
 import Home from './page';
 
 describe('Home page', () => {
-  it('renders the deploy now call to action', () => {
+  it('renders a call to action to open users workspace', () => {
     render(<Home />);
 
     expect(
       screen.getByRole('link', {
-        name: /deploy now/i,
+        name: /open users workspace/i,
       }),
     ).toBeInTheDocument();
   });

@@ -43,7 +43,7 @@ export type UserWithActivity = UserDetails & {
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, {
-    next: { revalidate: 300 },
+    next: { revalidate: 60 },
   });
 
   if (!response.ok) {

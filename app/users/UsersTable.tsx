@@ -25,6 +25,7 @@ type UsersDataBundle = {
 
 const DEFAULT_SORT: SortOption = "name-asc";
 const DEFAULT_FILTER: FilterOption = "all";
+const PAGE_SIZE = 5;
 
 const bundleFetcher = async (): Promise<UsersDataBundle> => {
   const [users, posts, todos] = await Promise.all([
@@ -56,6 +57,7 @@ function useQueryState() {
   const sort = (searchParams.get("sort") as SortOption | null) ?? DEFAULT_SORT;
   const filter =
     (searchParams.get("filter") as FilterOption | null) ?? DEFAULT_FILTER;
+  const page = Number(searchParams.get("page") ?? "1");
 
   const setParams = (updates: Record<string, string>) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -74,7 +76,7 @@ function useQueryState() {
     });
   };
 
-  return { query, sort, filter, setParams, searchParams };
+  return { query, sort, filter, page, setParams, searchParams };
 }
 
 function applyFilter(user: UserWithActivity, filter: FilterOption): boolean {
@@ -103,7 +105,7 @@ function sortUsers(users: UserWithActivity[], sort: SortOption): UserWithActivit
 }
 
 export default function UsersTable() {
-  const { query, sort, filter, setParams, searchParams } = useQueryState();
+  const { query, sort, filter, page, setParams, searchParams } = useQueryState();
 
   const { data, error, isLoading } = useSWR("users-ops-bundle", bundleFetcher);
 
@@ -126,21 +128,28 @@ export default function UsersTable() {
     return sortUsers(filtered, sort);
   }, [data, filter, query, sort]);
 
+  const totalPages = Math.max(1, Math.ceil(visibleUsers.length / PAGE_SIZE));
+  const safePage = Number.isFinite(page) && page > 0 ? Math.min(page, totalPages) : 1;
+  const pagedUsers = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return visibleUsers.slice(start, start + PAGE_SIZE);
+  }, [safePage, visibleUsers]);
+
   return (
     <section className="w-full max-w-6xl rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="mb-4 grid gap-3 md:grid-cols-3">
         <input
           aria-label="Search users"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-500 focus-visible:ring-2 focus-visible:ring-zinc-300"
-          onChange={(event) => setParams({ q: event.target.value })}
+          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-500 focus:border-zinc-500 focus-visible:ring-2 focus-visible:ring-zinc-300"
+          onChange={(event) => setParams({ q: event.target.value, page: "1" })}
           placeholder="Search by name or email"
           value={query}
         />
 
         <select
           aria-label="Filter users"
-          className="rounded-lg border border-zinc-300 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-zinc-300"
-          onChange={(event) => setParams({ filter: event.target.value })}
+          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-300"
+          onChange={(event) => setParams({ filter: event.target.value, page: "1" })}
           value={filter}
         >
           <option value="all">All users</option>
@@ -150,8 +159,8 @@ export default function UsersTable() {
 
         <select
           aria-label="Sort users"
-          className="rounded-lg border border-zinc-300 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-zinc-300"
-          onChange={(event) => setParams({ sort: event.target.value })}
+          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-300"
+          onChange={(event) => setParams({ sort: event.target.value, page: "1" })}
           value={sort}
         >
           <option value="name-asc">Name A-Z</option>
@@ -206,7 +215,7 @@ export default function UsersTable() {
                 </tr>
               </thead>
               <tbody>
-                {visibleUsers.map((user) => (
+                {pagedUsers.map((user) => (
                   <tr className="border-b border-zinc-100 hover:bg-zinc-50" key={user.id}>
                     <td className="px-3 py-2 text-zinc-900">
                       <Link
@@ -216,7 +225,7 @@ export default function UsersTable() {
                         {user.name}
                       </Link>
                     </td>
-                    <td className="px-3 py-2 text-zinc-700 break-all">{user.email}</td>
+                    <td className="px-3 py-2 break-all text-zinc-700">{user.email}</td>
                     <td className="px-3 py-2">
                       <a
                         className="inline-flex rounded px-1 py-0.5 text-blue-700 underline transition hover:text-blue-800 focus-visible:ring-2 focus-visible:ring-blue-200"
@@ -237,7 +246,7 @@ export default function UsersTable() {
           </div>
 
           <div className="space-y-3 md:hidden">
-            {visibleUsers.map((user) => (
+            {pagedUsers.map((user) => (
               <article
                 className="rounded-xl border border-zinc-200 p-4 shadow-sm"
                 key={user.id}
@@ -272,6 +281,32 @@ export default function UsersTable() {
               <p className="mt-1 text-xs text-zinc-500">
                 Try clearing the query or changing filter/sort options.
               </p>
+            </div>
+          ) : null}
+
+          {visibleUsers.length > 0 ? (
+            <div className="mt-4 flex items-center justify-between gap-3 border-t border-zinc-100 pt-4">
+              <p className="text-xs text-zinc-500">
+                Page {safePage} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  className="rounded border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={safePage <= 1}
+                  onClick={() => setParams({ page: String(safePage - 1) })}
+                  type="button"
+                >
+                  Previous
+                </button>
+                <button
+                  className="rounded border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={safePage >= totalPages}
+                  onClick={() => setParams({ page: String(safePage + 1) })}
+                  type="button"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           ) : null}
         </>

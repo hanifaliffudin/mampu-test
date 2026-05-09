@@ -105,7 +105,12 @@ describe("User details route", () => {
     render(<LoadingUserDetails />);
     expect(screen.getByText(/loading user details/i)).toBeInTheDocument();
 
-    render(<UserDetailsError />);
+    render(
+      <UserDetailsError
+        error={new Error("mock detail error")}
+        reset={jest.fn()}
+      />,
+    );
     expect(
       screen.getByText(/something went wrong while loading this user/i),
     ).toBeInTheDocument();
